@@ -360,7 +360,27 @@ body {
  * text, so it needs its own flex context or the subtitle collides with the
  * masthead content next to it.
  */
+/*
+ * The icon aligns to the centre of the wordmark, while the title and subtitle keep
+ * their shared baseline — hence the inner wrapper. Baseline-aligning an image against
+ * text puts the icon's bottom edge on the text baseline, which reads as sitting too low.
+ */
 .tis-masthead__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.tis-masthead__icon {
+  flex: 0 0 auto;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  /* Reserve the space before it loads so the wordmark does not shift. */
+  display: block;
+}
+
+.tis-masthead__text {
   display: flex;
   align-items: baseline;
   gap: 0.75rem;

@@ -13,8 +13,24 @@ export function AppMasthead({ fileName }: { fileName: string | null }): JSX.Elem
     <Masthead className="tis-masthead">
       <MastheadMain>
         <MastheadBrand className="tis-masthead__brand" data-codemods>
-          <span className="tis-masthead__title">Ticket Ink-Saver</span>
-          <span className="tis-masthead__subtitle">Mask ads in PDF tickets before printing them, runs entirely in your browser!</span>
+          {/*
+            The same artwork as the favicon, referenced through BASE_URL rather than as
+            "/favicon.svg". A root-absolute path would ignore Vite's base and 404 on a
+            GitHub Pages project site, which is served from /<repo>/. BASE_URL always
+            ends in a slash, so this is correct at the root too.
+          */}
+          <img
+            className="tis-masthead__icon"
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            width={28}
+            height={28}
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="tis-masthead__text">
+            <span className="tis-masthead__title">Ticket Ink-Saver</span>
+            <span className="tis-masthead__subtitle">Mask ads in PDF tickets before printing them, runs entirely in your browser!</span>
+          </span>
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent className="tis-masthead__content">
