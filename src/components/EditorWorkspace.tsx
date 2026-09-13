@@ -33,7 +33,7 @@ import { canRedo, canUndo, hasUnsavedMasks, selectedMask } from '../state/editor
 import { LoadError, loadDocument } from '../pdf/loadDocument';
 import { ExportError, buildMaskedPdf } from '../pdf/exportPdf';
 import { downloadPdf, printPdf, suggestedFileName } from '../pdf/output';
-import type { AppError, Mask, MaskId, ToolId } from '../types/models';
+import type { AppError, Mask, MaskId, ToolId, ZoomMode } from '../types/models';
 import {
   maskViewportBounds,
   moveBounds,
@@ -46,6 +46,7 @@ import { MAX_ZOOM, MIN_ZOOM } from '../constants';
 import { WIDE_LAYOUT_QUERY, useMediaQuery } from '../hooks/useMediaQuery';
 import { useUnloadWarning } from '../hooks/useUnloadWarning';
 import { useInkSavings } from '../hooks/useInkSavings';
+import { useFitZoom } from '../hooks/useFitZoom';
 
 export function EditorWorkspace(): JSX.Element {
   const state = useEditorState();
@@ -334,14 +335,26 @@ export function EditorWorkspace(): JSX.Element {
     [dispatch],
   );
 
-  const fitWidth = useCallback(() => {
-    const element = scrollRef.current;
-    const page = state.document?.pageSizes[visiblePageIndex];
-    if (!element || !page || page.width === 0) return;
-    // 48px accounts for the page gutter and the scrollbar.
-    const available = element.clientWidth - 48;
-    setZoom(clamp(available / page.width, MIN_ZOOM, MAX_ZOOM));
-  }, [state.document, visiblePageIndex, setZoom]);
+  const selectZoomMode = useCallback(
+    (mode: ZoomMode) => dispatch({ type: 'ZOOM_MODE_SELECTED', mode }),
+    [dispatch],
+  );
+
+  /*
+   * FR-3: while a fit mode is active the scale is recomputed from the space available,
+   * so resizing the window (or opening the mask panel) re-fits rather than leaving a
+   * stale percentage behind. The page being fitted is the one currently in view.
+   */
+  const applyFit = useCallback(
+    (zoom: number) => dispatch({ type: 'ZOOM_FITTED', zoom }),
+    [dispatch],
+  );
+  useFitZoom(
+    state.zoomMode,
+    state.document?.pageSizes[visiblePageIndex] ?? null,
+    scrollRef,
+    applyFit,
+  );
 
   // ---------------------------------------------------------------- output
 
@@ -471,6 +484,7 @@ export function EditorWorkspace(): JSX.Element {
         isBusy={isBusy}
         activeTool={state.activeTool}
         zoom={state.zoom}
+        zoomMode={state.zoomMode}
         strokeWidth={state.strokeWidth}
         canUndo={canUndo(state)}
         canRedo={canRedo(state)}
@@ -486,7 +500,7 @@ export function EditorWorkspace(): JSX.Element {
           dispatch({ type: 'STROKE_WIDTH_CHANGED', strokeWidth })
         }
         onZoomChange={setZoom}
-        onFitWidth={fitWidth}
+        onZoomModeChange={selectZoomMode}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onClearPage={() => {

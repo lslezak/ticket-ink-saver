@@ -63,6 +63,7 @@ src/
     EditorContext.tsx    Split state/dispatch/document contexts.
   geometry/maskGeometry.ts  Hit testing, handles, move and resize of existing masks.
   ink/inkEstimate.ts     Ink-coverage estimate from a small offscreen raster.
+  hooks/useFitZoom.ts    Live "fit width" / "fit page" scaling, re-fit on resize.
   components/            UI, including the three stacked canvas layers per page.
   hooks/                 Virtualisation, debounce, media queries, page loading.
 ```

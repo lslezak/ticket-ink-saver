@@ -135,12 +135,37 @@ order, each labelled with its page number.
 * AC-2.2 Scrolling a 200-page document stays responsive (see NFR-2 and §8.2).
 
 ### FR-3 Zoom
-Zoom in / out / reset, over a range of 25 %–400 %, in defined steps
-(`[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]`), plus a "fit width" option.
+
+Zoom in / out over a range of 25 %–400 % in defined steps
+(`[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]`), plus two **fit modes**, all offered from
+a single zoom menu — the fit modes are zoom choices, so they belong in the same list
+rather than as separate buttons where the active one is invisible.
+
+Zoom is therefore a *mode*, not just a number:
+
+* `FIXED` — a scale the user picked, which stays where it was put.
+* `FIT_WIDTH` — the page spans the available width.
+* `FIT_PAGE` — the whole page, caption included, fits the visible area.
+
+The fit modes are **live**: the scale is derived from the space available, so it is
+recomputed whenever that space changes.
 
 * AC-3.1 Changing zoom re-renders pages at the new scale and masks stay visually
   anchored to the same content. **This is the single most important regression test.**
 * AC-3.2 Scroll position stays anchored to the same content after a zoom change.
+* AC-3.3 A fit mode re-fits when the window is resized, and equally when anything else
+  changes the available space — the mask panel opening, the toolbar wrapping to another
+  row. Observing the viewer element catches all of these; a window resize listener
+  alone would catch only the first.
+* AC-3.4 Choosing a percentage, or using the +/- buttons, ends the fit mode. It is an
+  explicit instruction and must not be silently overridden by the next resize.
+* AC-3.5 The menu toggle shows the resulting percentage alongside the mode name
+  (`Fit page · 122 %`), since the mode name alone hides how big the page actually is.
+* AC-3.6 Fitting leaves a small margin and measures the caption below each sheet, so a
+  fitted page does not provoke the scrollbar that would then change the fit.
+* AC-3.7 Re-fitting settles in a single step. Applying a new scale resizes the pages,
+  which can add or remove a scrollbar, which resizes the viewer, which recomputes the
+  fit; changes below half a percent are ignored to break that loop.
 
 ### FR-4 Masking tools
 * **Rectangle** — press, drag, release draws an axis-aligned filled rectangle.
@@ -372,7 +397,7 @@ harder.
   * Open file (`FileUpload` / `Button`)
   * Tool `ToggleGroup`: Pan · Rectangle · Freehand
   * Freehand width control (visible only when Freehand is active)
-  * Zoom out · zoom level menu · zoom in · fit width
+  * Zoom out · zoom menu (fit modes, then percentages) · zoom in
   * Undo · Redo (icon buttons with tooltips showing the shortcut)
   * Overflow menu: Clear page, Clear all
   * Download (secondary) · **Print** (primary)
@@ -598,6 +623,8 @@ export type Mask =
     };
 
 export type ToolId = 'SELECT' | 'RECTANGLE' | 'FREEHAND';
+
+export type ZoomMode = 'FIXED' | 'FIT_WIDTH' | 'FIT_PAGE';
 
 /** Static, derived facts about the loaded document. */
 export interface DocumentInfo {

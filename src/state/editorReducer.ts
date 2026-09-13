@@ -17,6 +17,7 @@ import type {
   Mask,
   MaskId,
   MaskList,
+  ZoomMode,
 } from '../types/models';
 
 export type EditorAction =
@@ -34,6 +35,8 @@ export type EditorAction =
   | { type: 'TOOL_SELECTED'; tool: EditorState['activeTool'] }
   | { type: 'STROKE_WIDTH_CHANGED'; strokeWidth: number }
   | { type: 'ZOOM_CHANGED'; zoom: number }
+  | { type: 'ZOOM_MODE_SELECTED'; mode: ZoomMode }
+  | { type: 'ZOOM_FITTED'; zoom: number }
   | { type: 'EXPORT_STARTED' }
   | { type: 'EXPORT_FINISHED' }
   | { type: 'ERROR_RAISED'; error: AppError }
@@ -48,6 +51,12 @@ export const initialEditorState: EditorState = {
   selectedMaskId: null,
   strokeWidth: DEFAULT_STROKE_WIDTH,
   zoom: DEFAULT_ZOOM,
+  /*
+   * Fit page by default: opening a ticket should show the whole thing at once, which
+   * is what a user wants to see before deciding what to mask. DEFAULT_ZOOM is only the
+   * placeholder until the fit effect measures the viewer.
+   */
+  zoomMode: 'FIT_PAGE',
   status: 'IDLE',
   error: null,
   notice: null,
@@ -129,7 +138,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         status: 'READY',
         document: action.document,
         masks: emptyHistory,
-        zoom: DEFAULT_ZOOM,
+        zoom: state.zoomMode === 'FIXED' ? DEFAULT_ZOOM : state.zoom,
         error: null,
         notice: action.notice,
         exportedMasks: null,
@@ -210,7 +219,25 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, strokeWidth: action.strokeWidth };
 
     case 'ZOOM_CHANGED':
+      // Picking a percentage, or stepping with +/-, is an explicit choice that ends
+      // whichever fit mode was running.
+      return { ...state, zoom: action.zoom, zoomMode: 'FIXED' };
+
+    case 'ZOOM_MODE_SELECTED':
+      // The scale itself follows from the available space; the fit effect supplies it.
+      return { ...state, zoomMode: action.mode };
+
+    case 'ZOOM_FITTED': {
+      // Only a live fit mode may drive the scale this way.
+      if (state.zoomMode === 'FIXED') return state;
+      /*
+       * Guard against a feedback loop: applying a new scale resizes the pages, which
+       * can add or remove a scrollbar, which resizes the viewer, which recomputes the
+       * fit. Ignoring changes below half a percent settles that immediately.
+       */
+      if (Math.abs(state.zoom - action.zoom) < 0.0005) return state;
       return { ...state, zoom: action.zoom };
+    }
 
     case 'EXPORT_STARTED':
       return { ...state, status: 'EXPORTING', error: null };

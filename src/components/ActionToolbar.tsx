@@ -17,6 +17,7 @@ import {
   DropdownItem,
   DropdownList,
   MenuToggle,
+  Divider,
   Select,
   SelectList,
   SelectOption,
@@ -42,7 +43,7 @@ import SearchPlusIcon from '@patternfly/react-icons/dist/esm/icons/search-plus-i
 import SquareIcon from '@patternfly/react-icons/dist/esm/icons/square-icon';
 import UndoIcon from '@patternfly/react-icons/dist/esm/icons/undo-icon';
 import UploadIcon from '@patternfly/react-icons/dist/esm/icons/upload-icon';
-import type { ToolId } from '../types/models';
+import type { ToolId, ZoomMode } from '../types/models';
 import { formatSaving } from '../hooks/useInkSavings';
 import {
   MAX_STROKE_WIDTH,
@@ -55,6 +56,7 @@ export interface ActionToolbarProps {
   isBusy: boolean;
   activeTool: ToolId;
   zoom: number;
+  zoomMode: ZoomMode;
   strokeWidth: number;
   canUndo: boolean;
   canRedo: boolean;
@@ -69,7 +71,7 @@ export interface ActionToolbarProps {
   onToolChange: (tool: ToolId) => void;
   onStrokeWidthChange: (width: number) => void;
   onZoomChange: (zoom: number) => void;
-  onFitWidth: () => void;
+  onZoomModeChange: (mode: ZoomMode) => void;
   onUndo: () => void;
   onRedo: () => void;
   onClearPage: () => void;
@@ -78,6 +80,11 @@ export interface ActionToolbarProps {
   onPrint: () => void;
   onDownload: () => void;
 }
+
+const ZOOM_MODE_LABELS: Record<Exclude<ZoomMode, 'FIXED'>, string> = {
+  FIT_WIDTH: 'Fit width',
+  FIT_PAGE: 'Fit page',
+};
 
 const TOOLS: ReadonlyArray<{ id: ToolId; label: string; icon: JSX.Element }> = [
   // SELECT also pans: dragging empty space scrolls the document (FR-9).
@@ -180,9 +187,12 @@ export function ActionToolbar(props: ActionToolbarProps): JSX.Element {
             <Select
               id="tis-zoom-select"
               isOpen={isZoomOpen}
-              selected={zoom}
+              selected={props.zoomMode === 'FIXED' ? zoom : props.zoomMode}
               onSelect={(_event, value) => {
                 if (typeof value === 'number') props.onZoomChange(value);
+                else if (value === 'FIT_WIDTH' || value === 'FIT_PAGE') {
+                  props.onZoomModeChange(value);
+                }
                 setZoomOpen(false);
               }}
               onOpenChange={setZoomOpen}
@@ -193,13 +203,28 @@ export function ActionToolbar(props: ActionToolbarProps): JSX.Element {
                   isExpanded={isZoomOpen}
                   isDisabled={disabled}
                   aria-label="Zoom level"
-                  style={{ minWidth: '7rem' }}
+                  style={{ minWidth: '9rem' }}
                 >
-                  {`${Math.round(zoom * 100)}%`}
+                  {/*
+                    In a fit mode the resulting percentage is still shown: it is the
+                    answer to "how big is this now", which the mode name alone hides.
+                  */}
+                  {props.zoomMode === 'FIXED'
+                    ? `${Math.round(zoom * 100)}%`
+                    : `${ZOOM_MODE_LABELS[props.zoomMode]} · ${Math.round(zoom * 100)}%`}
                 </MenuToggle>
               )}
             >
               <SelectList>
+                {/* The fit modes live here rather than as separate buttons: they are
+                    zoom choices, and grouping them makes the current one visible. */}
+                <SelectOption value="FIT_PAGE" description="Follows the window size">
+                  {ZOOM_MODE_LABELS.FIT_PAGE}
+                </SelectOption>
+                <SelectOption value="FIT_WIDTH" description="Follows the window size">
+                  {ZOOM_MODE_LABELS.FIT_WIDTH}
+                </SelectOption>
+                <Divider component="li" />
                 {ZOOM_STEPS.map((step) => (
                   <SelectOption key={step} value={step}>
                     {`${Math.round(step * 100)}%`}
@@ -218,11 +243,6 @@ export function ActionToolbar(props: ActionToolbarProps): JSX.Element {
                 onClick={() => stepZoom(1)}
               />
             </Tooltip>
-          </ToolbarItem>
-          <ToolbarItem>
-            <Button variant="link" isInline isDisabled={disabled} onClick={props.onFitWidth}>
-              Fit width
-            </Button>
           </ToolbarItem>
         </ToolbarGroup>
 

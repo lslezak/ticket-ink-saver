@@ -7,6 +7,12 @@
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_PAGES = 200;
 
+/**
+ * FR-3: breathing room left around a fitted page, so that landing exactly on the
+ * viewport edge cannot provoke a scrollbar that then changes the fit.
+ */
+export const FIT_MARGIN_PX = 8;
+
 /** FR-3: discrete zoom steps, 25 %-400 %. */
 export const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4] as const;
 export const DEFAULT_ZOOM = 1;

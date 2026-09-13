@@ -100,6 +100,15 @@ export type MaskList = readonly Mask[];
 
 export type EditorStatus = 'IDLE' | 'LOADING' | 'READY' | 'EXPORTING' | 'ERROR';
 
+/**
+ * How the zoom level is decided (FR-3).
+ *
+ * `FIXED` is a scale the user picked and it stays put. The two fit modes are *live*:
+ * the scale is derived from the space available, so it is recomputed whenever that
+ * space changes — a window resize, or the mask panel opening.
+ */
+export type ZoomMode = 'FIXED' | 'FIT_WIDTH' | 'FIT_PAGE';
+
 export interface EditorState {
   readonly document: DocumentInfo | null;
   readonly masks: History<MaskList>;
@@ -108,7 +117,9 @@ export interface EditorState {
   readonly selectedMaskId: MaskId | null;
   /** PDF points, applied to newly drawn freehand masks. */
   readonly strokeWidth: number;
+  /** The effective scale, whatever produced it. 1 = 100 %. */
   readonly zoom: number;
+  readonly zoomMode: ZoomMode;
   readonly status: EditorStatus;
   readonly error: AppError | null;
   /**
