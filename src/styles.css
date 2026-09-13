@@ -31,8 +31,18 @@ body {
   overflow: hidden;
 }
 
+/*
+ * The app is pinned to the viewport instead of inheriting a height through
+ * html > body > #root. That chain only yields a definite height if every link keeps
+ * its 100%, and when one link fails the whole layout silently changes behaviour: the
+ * viewer sizes to its content, stops being the scroll container, and the page's <main>
+ * starts scrolling instead — taking the toolbar with it. Pinning removes the
+ * dependency, so the chain below always has a real height to divide up.
+ */
 #root > .pf-v6-c-page {
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  height: auto;
 }
 
 /*
@@ -47,31 +57,36 @@ body {
   min-height: 0;
 }
 
+/*
+ * `flex-basis: 0` throughout this chain, not `auto`. With `auto` the base size is the
+ * item's content height — a whole document's worth of pages — and it only shrinks back
+ * if every ancestor has a definite height. With `0` these divide up the space they are
+ * given, so .tis-viewer reliably ends up as the element that scrolls.
+ */
 .tis-section {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
 }
 
 .tis-workspace {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   min-width: 0;
   /*
-   * Normally nothing overflows here: the viewer absorbs all slack and can shrink to
-   * nothing. This only engages on a window too short to hold the header chrome at all,
-   * where without it the toolbar was simply clipped and unreachable. The toolbar is
-   * position:sticky, so it stays pinned to the top of this container while the rest
-   * scrolls — which is the whole point of it being sticky.
+   * The toolbar lives in here, so this must never scroll: anything scrollable around
+   * the toolbar can carry it off-screen, which is exactly the bug this rule once
+   * caused when it was `overflow-y: auto`. With the page pinned to the viewport above,
+   * the viewer absorbs all the slack and nothing overflows here anyway.
    */
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* PatternFly's Drawer is not a flex item by default; make it fill the workspace. */
 .tis-workspace > .pf-v6-c-drawer {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
 }
 
@@ -146,7 +161,7 @@ body {
 }
 
 .tis-viewer {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   overflow: auto;
   min-height: 0;
   min-width: 0;
