@@ -33,11 +33,25 @@ interface MaskListPanelProps {
   onClearPage: (pageIndex: number) => void;
 }
 
+/**
+ * Whole points for display.
+ *
+ * Stored sizes are exact and can be long floats — resizing a freehand stroke scales
+ * its width by the geometric mean of the two axis factors, which rarely lands on a
+ * round number. A sub-point stroke is reported as "<1" rather than "0", matching how
+ * the ink estimate formats a small non-zero value: a zero would read as "no width".
+ */
+function formatPoints(value: number): string {
+  const rounded = Math.round(value);
+  if (rounded === 0 && value > 0) return '<1';
+  return String(rounded);
+}
+
 function describeMask(mask: Mask): string {
   if (mask.kind === 'RECTANGLE') {
-    return `Rectangle, ${Math.round(mask.rect.width)} × ${Math.round(mask.rect.height)} pt`;
+    return `Rectangle, ${formatPoints(mask.rect.width)} × ${formatPoints(mask.rect.height)} pt`;
   }
-  return `Freehand stroke, ${mask.path.length} points, ${mask.strokeWidth} pt wide`;
+  return `Freehand stroke, ${mask.path.length} points, ${formatPoints(mask.strokeWidth)} pt wide`;
 }
 
 export function MaskListPanel({
