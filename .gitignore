@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.scratch/
+
+# Generated at build time by scripts/generate-third-party-licenses.mjs
+public/LICENSE.txt
