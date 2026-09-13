@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Ladislav Slezák
 
 /** §8.2: a held-down zoom button should queue one render, not one per repeat. */
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * Rate-limit a value, applying the *first* change straight away.
@@ -17,7 +17,21 @@ export function useDebouncedValue<T>(value: T, delayMs: number): T {
   // 0 so the very first change is always "overdue" and applies without delay.
   const lastAppliedAt = useRef(0);
 
-  useEffect(() => {
+  /*
+   * A layout effect so an immediate change is applied before the browser paints. As a
+   * passive effect this ran *after* paint — and under load (the ink measurement runs
+   * at exactly this moment) it could be delayed long enough to show the pages at the
+   * old scale first.
+   */
+  useLayoutEffect(() => {
+    /*
+     * Nothing to apply. This also matters on mount: without it the initial value
+     * "applied" itself, consumed the leading edge, and the first real change was then
+     * throttled — which is exactly the delay that made pages paint at the old scale
+     * before jumping to the fitted one.
+     */
+    if (Object.is(value, throttled)) return undefined;
+
     const elapsed = performance.now() - lastAppliedAt.current;
     if (elapsed >= delayMs) {
       lastAppliedAt.current = performance.now();
@@ -30,7 +44,7 @@ export function useDebouncedValue<T>(value: T, delayMs: number): T {
       setThrottled(value);
     }, delayMs - elapsed);
     return () => window.clearTimeout(timeoutId);
-  }, [value, delayMs]);
+  }, [value, throttled, delayMs]);
 
   return throttled;
 }

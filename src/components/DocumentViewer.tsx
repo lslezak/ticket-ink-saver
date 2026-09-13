@@ -61,6 +61,14 @@ export function DocumentViewer({
     previousZoomRef.current = renderedZoom;
     if (!element || previousZoom === renderedZoom || previousZoom === 0) return;
 
+    /*
+     * Already at the top: stay there. Anchoring the viewport *centre* would otherwise
+     * push a top-aligned document downwards on zoom-in, which is both unexpected and,
+     * on the automatic fit that runs when a document opens, leaves the first page
+     * starting behind the toolbar.
+     */
+    if (element.scrollTop === 0) return;
+
     const ratio = renderedZoom / previousZoom;
     const centre = element.scrollTop + element.clientHeight / 2;
     element.scrollTop = Math.max(0, centre * ratio - element.clientHeight / 2);

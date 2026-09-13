@@ -143,16 +143,22 @@ rather than as separate buttons where the active one is invisible.
 
 Zoom is therefore a *mode*, not just a number:
 
-* `FIXED` — a scale the user picked, which stays where it was put.
+* `FIT_PAGE` — the whole page, caption included, fits the visible area. **The
+  default**, and listed first: opening a ticket should show all of it at once, which is
+  what the user needs before deciding what to mask.
 * `FIT_WIDTH` — the page spans the available width.
-* `FIT_PAGE` — the whole page, caption included, fits the visible area.
+* `FIXED` — a scale the user picked, which stays where it was put.
 
 The fit modes are **live**: the scale is derived from the space available, so it is
 recomputed whenever that space changes.
 
 * AC-3.1 Changing zoom re-renders pages at the new scale and masks stay visually
   anchored to the same content. **This is the single most important regression test.**
-* AC-3.2 Scroll position stays anchored to the same content after a zoom change.
+* AC-3.2 Scroll position stays anchored to the same content after a zoom change —
+  except at the very top, which stays at the top. Anchoring the viewport *centre*
+  would otherwise push a top-aligned document downwards on zoom-in, and on the
+  automatic fit when a document opens that left the first page starting behind the
+  toolbar.
 * AC-3.3 A fit mode re-fits when the window is resized, and equally when anything else
   changes the available space — the mask panel opening, the toolbar wrapping to another
   row. Observing the viewer element catches all of these; a window resize listener
@@ -163,6 +169,12 @@ recomputed whenever that space changes.
   (`Fit page · 122 %`), since the mode name alone hides how big the page actually is.
 * AC-3.6 Fitting leaves a small margin and measures the caption below each sheet, so a
   fitted page does not provoke the scrollbar that would then change the fit.
+* AC-3.8 The fitted scale is applied **before the first paint**, so pages never appear
+  at one size and then jump to another. Two things were needed: computing the fit in a
+  layout effect rather than a `requestAnimationFrame` (which the ink measurement's work
+  delays), and not letting the zoom throttle swallow the first change — on mount it was
+  "applying" the unchanged initial value, consuming its leading edge and delaying the
+  real one.
 * AC-3.7 Re-fitting settles in a single step. Applying a new scale resizes the pages,
   which can add or remove a scrollbar, which resizes the viewer, which recomputes the
   fit; changes below half a percent are ignored to break that loop.
