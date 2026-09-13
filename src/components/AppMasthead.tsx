@@ -29,7 +29,7 @@ export function AppMasthead({ fileName }: { fileName: string | null }): JSX.Elem
           />
           <span className="tis-masthead__text">
             <span className="tis-masthead__title">Ticket Ink-Saver</span>
-            <span className="tis-masthead__subtitle">Mask ads in PDF tickets before printing them, runs entirely in your browser!</span>
+            <span className="tis-masthead__subtitle">Mask ads in PDF tickets before printing them. Runs entirely in your browser!</span>
           </span>
         </MastheadBrand>
       </MastheadMain>
