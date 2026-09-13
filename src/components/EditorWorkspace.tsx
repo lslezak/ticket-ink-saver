@@ -45,6 +45,7 @@ import type { PageViewport } from '../pdf/pdfjs';
 import { MAX_ZOOM, MIN_ZOOM } from '../constants';
 import { WIDE_LAYOUT_QUERY, useMediaQuery } from '../hooks/useMediaQuery';
 import { useUnloadWarning } from '../hooks/useUnloadWarning';
+import { useInkSavings } from '../hooks/useInkSavings';
 
 export function EditorWorkspace(): JSX.Element {
   const state = useEditorState();
@@ -85,6 +86,10 @@ export function EditorWorkspace(): JSX.Element {
    */
   const unsaved = hasUnsavedMasks(state);
   useUnloadWarning(unsaved);
+
+  // FR-10. Measured per page off a small offscreen raster, independent of what is
+  // currently rendered, so the total covers the whole document.
+  const ink = useInkSavings(masks, state.document?.pageCount ?? 0);
 
   /*
    * pdf-lib cannot decrypt, so an encrypted source can be viewed and masked but not
@@ -470,6 +475,8 @@ export function EditorWorkspace(): JSX.Element {
         canUndo={canUndo(state)}
         canRedo={canRedo(state)}
         maskCount={masks.length}
+        inkSaved={ink.total}
+        inkMeasuring={ink.totalPages > 0 && ink.measuredPages < ink.totalPages}
         isPanelOpen={isPanelOpen}
         canExport={exportDisabledReason === null}
         exportDisabledReason={exportDisabledReason}
@@ -541,6 +548,7 @@ export function EditorWorkspace(): JSX.Element {
                 onCommitGeometry={commitGeometry}
                 onSelect={selectMask}
                 onViewport={registerViewport}
+                inkPerPage={ink.perPage}
                 onVisiblePageChange={setVisiblePageIndex}
               />
             ) : (

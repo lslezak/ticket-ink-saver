@@ -47,3 +47,13 @@ export const PRINT_TIMEOUT_MS = 5000;
 
 /** AC-1.2 */
 export const MAX_PASSWORD_ATTEMPTS = 3;
+
+/**
+ * FR-10: longest edge of the offscreen raster used to estimate ink coverage.
+ *
+ * Small on purpose. It bounds both the render cost and the memory retained per page,
+ * and measurement converges well before this point: 200, 400 and 800 all report the
+ * same rounded percentage on a realistic ticket, while 24 shifts it by a point. There
+ * is nothing to buy by going higher.
+ */
+export const INK_SAMPLE_MAX_DIMENSION_PX = 200;

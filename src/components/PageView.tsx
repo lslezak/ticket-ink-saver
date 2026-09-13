@@ -14,6 +14,7 @@ import { usePageViewport, usePdfPage } from '../hooks/usePdfPage';
 import type { PageViewport } from '../pdf/pdfjs';
 import { useIsVisible } from '../hooks/useIsVisible';
 import { RENDER_OVERSCAN_PX } from '../constants';
+import { formatSaving } from '../hooks/useInkSavings';
 import { PdfCanvas } from './PdfCanvas';
 import { MaskCanvas } from './MaskCanvas';
 import { InteractionLayer } from './InteractionLayer';
@@ -32,6 +33,8 @@ interface PageViewProps {
   onPan: (dx: number, dy: number) => void;
   /** Publishes this page's live viewport so keyboard editing can use the same maths. */
   onViewport: (pageIndex: number, viewport: PageViewport | null) => void;
+  /** Estimated share of this page's ink removed by its masks, 0-1 (FR-10). */
+  inkSaved: number | null;
 }
 
 function PageViewImpl({
@@ -47,6 +50,7 @@ function PageViewImpl({
   onSelect,
   onPan,
   onViewport,
+  inkSaved,
 }: PageViewProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   /*
@@ -109,6 +113,10 @@ function PageViewImpl({
       <div className="tis-page__label">
         Page {pageIndex + 1}
         {masks.length > 0 ? ` — ${masks.length} mask${masks.length === 1 ? '' : 's'}` : ''}
+        {/* Only worth showing once this page has masks that actually save something. */}
+        {masks.length > 0 && inkSaved !== null ? (
+          <span className="tis-page__ink"> · {formatSaving(inkSaved)} ink saved</span>
+        ) : null}
       </div>
     </div>
   );

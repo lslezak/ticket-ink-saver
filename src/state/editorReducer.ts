@@ -157,6 +157,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
 
     case 'MASK_SELECTED':
+      // Re-selecting the same mask (or clearing an empty selection) is a no-op;
+      // returning a fresh object would re-render the tree for nothing.
+      if (state.selectedMaskId === action.maskId) return state;
       return { ...state, selectedMaskId: action.maskId };
 
     case 'MASK_GEOMETRY_CHANGED': {

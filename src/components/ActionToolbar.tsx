@@ -35,6 +35,7 @@ import EllipsisVIcon from '@patternfly/react-icons/dist/esm/icons/ellipsis-v-ico
 import LayerGroupIcon from '@patternfly/react-icons/dist/esm/icons/layer-group-icon';
 import PencilAltIcon from '@patternfly/react-icons/dist/esm/icons/pencil-alt-icon';
 import PrintIcon from '@patternfly/react-icons/dist/esm/icons/print-icon';
+import TintIcon from '@patternfly/react-icons/dist/esm/icons/tint-icon';
 import RedoIcon from '@patternfly/react-icons/dist/esm/icons/redo-icon';
 import SearchMinusIcon from '@patternfly/react-icons/dist/esm/icons/search-minus-icon';
 import SearchPlusIcon from '@patternfly/react-icons/dist/esm/icons/search-plus-icon';
@@ -42,6 +43,7 @@ import SquareIcon from '@patternfly/react-icons/dist/esm/icons/square-icon';
 import UndoIcon from '@patternfly/react-icons/dist/esm/icons/undo-icon';
 import UploadIcon from '@patternfly/react-icons/dist/esm/icons/upload-icon';
 import type { ToolId } from '../types/models';
+import { formatSaving } from '../hooks/useInkSavings';
 import {
   MAX_STROKE_WIDTH,
   MIN_STROKE_WIDTH,
@@ -57,6 +59,9 @@ export interface ActionToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
   maskCount: number;
+  /** Estimated share of the document's ink removed by the masks, 0-1 (FR-10). */
+  inkSaved: number | null;
+  inkMeasuring: boolean;
   isPanelOpen: boolean;
   canExport: boolean;
   exportDisabledReason: string | null;
@@ -280,6 +285,25 @@ export function ActionToolbar(props: ActionToolbarProps): JSX.Element {
         </ToolbarGroup>
 
         <ToolbarGroup align={{ default: 'alignEnd' }}>
+          <ToolbarItem>
+            {/* FR-10: an estimate, and the tooltip says so rather than implying precision. */}
+            <Tooltip
+              content={
+                props.inkMeasuring
+                  ? 'Estimating how much ink the masks save…'
+                  : 'Rough estimate of the ink saved across the whole document, based on how ' +
+                    'much of the printed area the masks cover.'
+              }
+            >
+              <span className="tis-toolbar__ink" aria-live="polite">
+                <TintIcon />
+                <span className="tis-toolbar__ink-value">
+                  {props.inkMeasuring ? '…' : formatSaving(props.inkSaved)}
+                </span>
+                <span className="tis-toolbar__ink-label">ink saved</span>
+              </span>
+            </Tooltip>
+          </ToolbarItem>
           <ToolbarItem>
             <Tooltip content={props.isPanelOpen ? 'Hide the mask list' : 'Show the mask list'}>
               <Button

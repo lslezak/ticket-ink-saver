@@ -28,6 +28,8 @@ interface DocumentViewerProps {
   onCommitGeometry: (mask: Mask) => void;
   onSelect: (maskId: MaskId | null) => void;
   onViewport: (pageIndex: number, viewport: PageViewport | null) => void;
+  /** Per-page ink saving, 0-1, indexed by page; null where not measured yet (FR-10). */
+  inkPerPage: ReadonlyArray<number | null>;
   /** Which page is currently under the middle of the viewport (for "clear page"). */
   onVisiblePageChange: (pageIndex: number) => void;
 }
@@ -44,6 +46,7 @@ export function DocumentViewer({
   onCommitGeometry,
   onSelect,
   onViewport,
+  inkPerPage,
   onVisiblePageChange,
 }: DocumentViewerProps): JSX.Element {
   const renderedZoom = useDebouncedValue(zoom, ZOOM_DEBOUNCE_MS);
@@ -76,6 +79,37 @@ export function DocumentViewer({
 
   const emptyMasks = useMemo<readonly Mask[]>(() => [], []);
   const handleCommit = useCallback((mask: Mask) => onCommitMask(mask), [onCommitMask]);
+
+  /**
+   * Pressing the area around the pages clears the selection (FR-9).
+   *
+   * The interaction canvas only covers the page sheet itself, so it can deselect a
+   * click on blank paper but never one on the grey surround. This fills that gap, and
+   * deliberately fires on pointer-down to match the in-page behaviour rather than
+   * lagging a frame behind it.
+   */
+  const handleBackgroundPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const element = scrollRef.current;
+      /*
+       * A press on the container's own scrollbar reports the container as its target.
+       * Grabbing a scrollbar is not "clicking outside the page", so leave the
+       * selection alone.
+       */
+      if (
+        element &&
+        event.target === element &&
+        (event.nativeEvent.offsetX > element.clientWidth ||
+          event.nativeEvent.offsetY > element.clientHeight)
+      ) {
+        return;
+      }
+
+      if ((event.target as HTMLElement).closest('.tis-page__sheet')) return;
+      onSelect(null);
+    },
+    [scrollRef, onSelect],
+  );
 
   /**
    * Drag-to-pan for the SELECT tool. The interaction layer captures the pointer, so
@@ -129,7 +163,13 @@ export function DocumentViewer({
   }, [info, scrollRef, onVisiblePageChange]);
 
   return (
-    <div className="tis-viewer" ref={scrollRef} data-tool={activeTool} onScroll={handleScroll}>
+    <div
+      className="tis-viewer"
+      ref={scrollRef}
+      data-tool={activeTool}
+      onScroll={handleScroll}
+      onPointerDown={handleBackgroundPointerDown}
+    >
       <div className="tis-viewer__pages">
         {info.pageSizes.map((size, index) => (
           <PageView
@@ -146,6 +186,7 @@ export function DocumentViewer({
             onSelect={onSelect}
             onPan={handlePan}
             onViewport={onViewport}
+            inkSaved={inkPerPage[index] ?? null}
           />
         ))}
       </div>

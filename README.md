@@ -40,7 +40,10 @@ npm run typecheck  # types only
    keyboard- and screen-reader-accessible way to manage masks. With a mask selected,
    arrows move it, **Alt**+arrows resize it, **Shift** takes a bigger step, **Delete**
    removes it and **Escape** deselects.
-5. **Print** (also **Ctrl/Cmd+P**), or **Download** to save the masked copy.
+5. The toolbar shows roughly how much ink the masks save across the document, and each
+   page repeats its own figure underneath. It is an estimate from how much of the
+   printed area is covered — real consumption depends on your printer and driver.
+6. **Print** (also **Ctrl/Cmd+P**), or **Download** to save the masked copy.
 
 ## How it is put together
 
@@ -59,6 +62,7 @@ src/
     editorReducer.ts     Committed state + snapshot undo/redo.
     EditorContext.tsx    Split state/dispatch/document contexts.
   geometry/maskGeometry.ts  Hit testing, handles, move and resize of existing masks.
+  ink/inkEstimate.ts     Ink-coverage estimate from a small offscreen raster.
   components/            UI, including the three stacked canvas layers per page.
   hooks/                 Virtualisation, debounce, media queries, page loading.
 ```

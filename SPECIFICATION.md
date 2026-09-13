@@ -235,7 +235,9 @@ are **move** and **resize** only — no rotation, and no point-by-point reshapin
 freehand stroke.
 
 * **Select** — click a mask with the Select tool, or its row in the mask list. A newly
-  drawn mask is selected automatically, so it can be adjusted straight away.
+  drawn mask is selected automatically, so it can be adjusted straight away. Pressing
+  anywhere that is not a mask clears the selection: blank paper, and the area around
+  the pages.
 * **Move** — drag the mask body. Applies to both rectangles and freehand strokes.
 * **Resize** — drag one of the handles on the selection box. A rectangle changes size
   directly; a freehand stroke has its path scaled within the box, and its stroke width
@@ -274,6 +276,59 @@ freehand stroke.
 * AC-9.11 A gesture entirely absorbed by clamping (dragging against an edge that will
   not move) commits nothing to the undo history, exactly like a click that only
   selects (AC-9.2).
+* AC-9.12 Pressing outside the page — the surround around the sheets, not just blank
+  paper within it — clears the selection. The interaction canvas covers only the page
+  sheet, so the scroll container handles this case; it fires on pointer-down, matching
+  the in-page behaviour rather than lagging behind it.
+* AC-9.13 Pressing the scroll container's own scrollbar does **not** clear the
+  selection. A scrollbar press reports the container as its target, so without a guard
+  it would read as "outside the page"; grabbing a scrollbar is navigation, not
+  deselection.
+* AC-9.14 Clearing the selection never deletes or alters a mask, and adds nothing to
+  the undo history — selection is view state, not document state.
+
+### FR-10 Ink-saving estimate
+
+The app reports roughly how much ink the masks save — the whole point of the product,
+so it should be visible without exporting anything.
+
+* **Toolbar** — one figure for the whole document.
+* **Page label** — the same figure per page, shown once that page has masks.
+
+**Definition.** Each pixel scores `1 - mean(r, g, b)`: white is no ink, black is full
+coverage, and a saturated colour counts as needing more ink than a pale one. A page's
+saving is the ink lying under its masks divided by the ink on the unmasked page; the
+document figure is the same ratio over the summed totals.
+
+**Method.** Each page is rendered once to a small offscreen raster (longest edge
+`INK_SAMPLE_MAX_DIMENSION_PX`, default 200) and scored. Masks are rasterised at the
+same scale and the ink beneath them summed.
+
+* AC-10.1 Measured from a page's **own fixed-scale raster**, not the on-screen canvas.
+  Displayed pages are virtualised (§8.2) and re-rendered on zoom, so a figure taken
+  from them would count only visible pages and drift as the user scrolled.
+* AC-10.2 The document figure covers **every** page, including those never scrolled
+  into view.
+* AC-10.3 The estimate is independent of zoom level.
+* AC-10.4 It updates on every committed change — draw, move, resize, delete, undo,
+  redo — but not during a drag, since nothing is committed then.
+* AC-10.5 No masks reads as 0 %; masks covering all the ink read as 100 %. A document
+  of blank pages reads 0 %, not "unknown": there is genuinely nothing to save.
+* AC-10.6 Masks are scored without their editor chrome (selection outline, dashed
+  border), which is screen-only and prints nothing.
+* AC-10.7 Measuring yields between pages so a long document cannot lock the UI, and is
+  abandoned if the document changes underneath it. The toolbar shows progress until
+  every page is measured.
+* AC-10.8 It is an **estimate** and the UI says so. Real consumption depends on the
+  printer's colour model, driver, dithering and paper. It must never be presented as a
+  guarantee.
+
+*Accuracy, measured:* on a synthetic page of four identical black squares, masking one,
+two and four of them reports 25 %, 50 % and 100 % exactly. On a realistic ticket the
+figure sits within ~3 points of an independent implementation; the residual is the two
+rasterisers antialiasing thin text and barcode bars differently, and sampling at 200,
+400 or 800 px yields the same rounded answer, so there is nothing to buy by sampling
+harder.
 
 ---
 
