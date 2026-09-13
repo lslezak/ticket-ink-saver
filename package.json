@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Browser-based utility to mask ads on PDF tickets before printing, to save ink.",
   "scripts": {
+    "predev": "node scripts/generate-third-party-licenses.mjs",
     "dev": "vite",
     "prebuild": "node scripts/generate-third-party-licenses.mjs",
     "build": "tsc -b && vite build",

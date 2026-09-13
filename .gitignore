@@ -4,5 +4,8 @@ dist/
 .DS_Store
 .scratch/
 
-# Generated at build time by scripts/generate-third-party-licenses.mjs
+# Generated at build time by scripts/generate-third-party-licenses.mjs.
+# Both are regenerated from node_modules on every build, so committing them would
+# only create churn whenever a dependency version changes.
 public/LICENSE.txt
+public/THIRD-PARTY-LICENSES.txt

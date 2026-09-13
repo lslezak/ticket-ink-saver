@@ -135,9 +135,14 @@ GPLv2 without first removing pdf.js.
 | PatternFly (`react-core`, `react-icons`, `react-styles`, `react-tokens`) | MIT |
 | Red Hat Display / Text / Mono fonts (bundled by PatternFly) | SIL OFL 1.1 |
 
-`npm run build` regenerates `public/THIRD-PARTY-LICENSES.txt` (and copies `LICENSE`
-into the bundle) via `scripts/generate-third-party-licenses.mjs`, so the shipped
-`dist/` always carries the notices. Run it on its own with `npm run licenses`.
+`scripts/generate-third-party-licenses.mjs` writes `public/THIRD-PARTY-LICENSES.txt`
+and copies `LICENSE` to `public/LICENSE.txt`, so the shipped `dist/` always carries the
+notices. It runs automatically before both `npm run dev` and `npm run build`, and can
+be run on its own with `npm run licenses`.
+
+Both files are **build artifacts and are not committed** — they are regenerated from
+`node_modules`, so committing them would only churn whenever a dependency changes. A
+fresh clone has neither until you run one of those scripts.
 
 This matters because minification strips `@license` comments out of the bundle, while Apache-2.0 §4
 still requires the licence text and attribution notices to travel with the code. Both files are
