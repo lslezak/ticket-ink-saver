@@ -32,8 +32,8 @@ npm run typecheck  # types only
    blue outline in the editor so you can see them; the outline is editor-only and is
    never written to the PDF.
 3. Adjust a mask with the **Select** tool: drag it to move, drag a handle to resize,
-   drag empty space to scroll. Move and resize are the only edit operations — masks are
-   not rotated or reshaped point-by-point.
+   drag empty space to scroll. Masks are kept within the page. Move and resize are the
+   only edit operations — masks are not rotated or reshaped point-by-point.
 4. **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** redoes; a whole move or resize is a
    single undo step. The panel on the right lists every mask, selects one when you
    click its row, and deletes them individually — that panel, not the canvas, is the

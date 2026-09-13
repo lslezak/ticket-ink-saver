@@ -168,38 +168,90 @@ function distanceToSegment(p: ViewportPoint, a: ViewportPoint, b: ViewportPoint)
   return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 }
 
+/** The page's own on-screen box: masks are confined to it (FR-9). */
+export interface PageBounds {
+  readonly width: number;
+  readonly height: number;
+}
+
+export function pageBoundsOf(viewport: PageViewport): PageBounds {
+  return { width: viewport.width, height: viewport.height };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
 /**
- * Apply a handle drag to a box.
+ * Move a box by (dx, dy), keeping it on the page.
+ *
+ * The permitted range is widened to include wherever the box already is, so a mask
+ * that already overhangs the edge — a thick freehand stroke drawn along the margin
+ * has half its width outside by construction — is never yanked inwards the instant
+ * you nudge it. The rule is "a drag may not make the overhang worse", not "snap it
+ * inside", which would move the mask further than the user asked.
+ *
+ * Size is preserved: a move never resizes.
+ */
+export function moveBounds(
+  bounds: ViewportRect,
+  dx: number,
+  dy: number,
+  page: PageBounds,
+): ViewportRect {
+  const minX = Math.min(0, bounds.x);
+  const maxX = Math.max(page.width - bounds.width, bounds.x);
+  const minY = Math.min(0, bounds.y);
+  const maxY = Math.max(page.height - bounds.height, bounds.y);
+
+  return {
+    ...bounds,
+    x: clamp(bounds.x + dx, minX, maxX),
+    y: clamp(bounds.y + dy, minY, maxY),
+  };
+}
+
+/**
+ * Apply a handle drag to a box, keeping the dragged edges on the page.
  *
  * Dragging an edge past its opposite is allowed and flips the box, which is what a
- * user expects; the result is re-normalised so width/height stay positive.
+ * user expects; the result is re-normalised so width/height stay positive. Only the
+ * edges the handle actually moves are clamped, so an untouched edge keeps whatever
+ * overhang it already had.
  */
 export function resizeBounds(
   bounds: ViewportRect,
   handle: HandleId,
   dx: number,
   dy: number,
+  page: PageBounds,
 ): ViewportRect {
   let left = bounds.x;
   let top = bounds.y;
   let right = bounds.x + bounds.width;
   let bottom = bounds.y + bounds.height;
 
-  if (handle.includes('w')) left += dx;
-  if (handle.includes('e')) right += dx;
-  if (handle.includes('n')) top += dy;
-  if (handle.includes('s')) bottom += dy;
+  if (handle.includes('w')) left = clamp(left + dx, 0, page.width);
+  if (handle.includes('e')) right = clamp(right + dx, 0, page.width);
+  if (handle.includes('n')) top = clamp(top + dy, 0, page.height);
+  if (handle.includes('s')) bottom = clamp(bottom + dy, 0, page.height);
 
+  const x = Math.min(left, right);
+  const y = Math.min(top, bottom);
+  // A mask can never be wider than the page it lives on.
+  const width = clamp(Math.abs(right - left), MIN_MASK_SIZE_PX, Math.max(page.width, MIN_MASK_SIZE_PX));
+  const height = clamp(Math.abs(bottom - top), MIN_MASK_SIZE_PX, Math.max(page.height, MIN_MASK_SIZE_PX));
+
+  /*
+   * Enforcing the minimum size can push a box that was pinned against an edge back
+   * over it, so re-seat it afterwards rather than leaving it hanging off.
+   */
   return {
-    x: Math.min(left, right),
-    y: Math.min(top, bottom),
-    width: Math.max(Math.abs(right - left), MIN_MASK_SIZE_PX),
-    height: Math.max(Math.abs(bottom - top), MIN_MASK_SIZE_PX),
+    x: clamp(x, 0, Math.max(0, page.width - width)),
+    y: clamp(y, 0, Math.max(0, page.height - height)),
+    width,
+    height,
   };
-}
-
-export function translateBounds(bounds: ViewportRect, dx: number, dy: number): ViewportRect {
-  return { ...bounds, x: bounds.x + dx, y: bounds.y + dy };
 }
 
 /**

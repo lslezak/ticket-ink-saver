@@ -30,9 +30,10 @@ import {
   hitTestHandle,
   hitTestMask,
   maskViewportBounds,
+  moveBounds,
+  pageBoundsOf,
   remapMask,
   resizeBounds,
-  translateBounds,
 } from '../geometry/maskGeometry';
 import type { HandleId } from '../geometry/maskGeometry';
 import { simplifyPath } from '../geometry/simplify';
@@ -277,10 +278,12 @@ export function InteractionLayer(props: InteractionLayerProps): JSX.Element {
         const dx = point.x - drag.origin.x;
         const dy = point.y - drag.origin.y;
         if (dx !== 0 || dy !== 0) drag.moved = true;
+        // FR-9: masks stay on the page, whether moved or resized.
+        const page = pageBoundsOf(viewport);
         drag.to =
           drag.kind === 'MOVE'
-            ? translateBounds(drag.from, dx, dy)
-            : resizeBounds(drag.from, drag.handle, dx, dy);
+            ? moveBounds(drag.from, dx, dy, page)
+            : resizeBounds(drag.from, drag.handle, dx, dy, page);
         redraw();
         return;
       }
@@ -319,8 +322,12 @@ export function InteractionLayer(props: InteractionLayerProps): JSX.Element {
       if (!commit) return;
 
       if (drag.kind === 'MOVE' || drag.kind === 'RESIZE') {
-        // A click that selected a mask without moving it must not enter the undo history.
-        if (drag.moved) {
+        /*
+         * Nothing enters the undo history unless the geometry actually changed. That
+         * covers a click that only selected a mask, and also a drag against the page
+         * edge that clamping absorbed entirely (FR-9).
+         */
+        if (drag.moved && !sameBounds(drag.from, drag.to)) {
           onCommitGeometry(remapMask(drag.mask, drag.from, drag.to, viewport));
         }
         return;
@@ -350,6 +357,10 @@ export function InteractionLayer(props: InteractionLayerProps): JSX.Element {
       aria-hidden="true"
     />
   );
+}
+
+function sameBounds(a: ViewportRect, b: ViewportRect): boolean {
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 /** Turn a finished draw gesture into a mask, or null if it was degenerate (AC-4.2). */

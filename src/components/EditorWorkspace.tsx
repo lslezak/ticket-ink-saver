@@ -34,7 +34,13 @@ import { LoadError, loadDocument } from '../pdf/loadDocument';
 import { ExportError, buildMaskedPdf } from '../pdf/exportPdf';
 import { downloadPdf, printPdf, suggestedFileName } from '../pdf/output';
 import type { AppError, Mask, MaskId, ToolId } from '../types/models';
-import { maskViewportBounds, remapMask, resizeBounds, translateBounds } from '../geometry/maskGeometry';
+import {
+  maskViewportBounds,
+  moveBounds,
+  pageBoundsOf,
+  remapMask,
+  resizeBounds,
+} from '../geometry/maskGeometry';
 import type { PageViewport } from '../pdf/pdfjs';
 import { MAX_ZOOM, MIN_ZOOM } from '../constants';
 import { WIDE_LAYOUT_QUERY, useMediaQuery } from '../hooks/useMediaQuery';
@@ -293,10 +299,16 @@ export function EditorWorkspace(): JSX.Element {
       const step = event.shiftKey ? 10 : 1;
       const [dx, dy] = [delta[0] * step, delta[1] * step];
       const from = maskViewportBounds(selected, viewport);
+      const page = pageBoundsOf(viewport);
       // Alt turns the arrows into a resize of the bottom-right corner.
       const to = event.altKey
-        ? resizeBounds(from, 'se', dx, dy)
-        : translateBounds(from, dx, dy);
+        ? resizeBounds(from, 'se', dx, dy, page)
+        : moveBounds(from, dx, dy, page);
+
+      // Clamping can absorb the step entirely at the page edge; don't record a no-op.
+      if (to.x === from.x && to.y === from.y && to.width === from.width && to.height === from.height) {
+        return;
+      }
 
       commitGeometry(remapMask(selected, from, to, viewport));
       announce(

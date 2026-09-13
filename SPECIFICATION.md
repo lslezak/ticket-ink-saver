@@ -264,6 +264,16 @@ freehand stroke.
   leaving it pointing at a mask that no longer exists.
 * AC-9.8 While a mask is being dragged the committed layer stops painting it, so the
   original never shows through beneath the live preview.
+* AC-9.9 A mask stays within the page when moved or resized, matching AC-4.3 for
+  drawing. A move preserves the mask's size and stops at the edge; a resize clamps only
+  the edges the handle actually drags, and no mask may exceed the page's own size.
+* AC-9.10 Clamping never *corrects* a pre-existing overhang — a thick freehand stroke
+  drawn along the margin has half its width outside the page by construction, and
+  nudging it must not jerk it inwards. The rule is "a gesture may not make the overhang
+  worse", so the permitted range is widened to include wherever the mask already sits.
+* AC-9.11 A gesture entirely absorbed by clamping (dragging against an edge that will
+  not move) commits nothing to the undo history, exactly like a click that only
+  selects (AC-9.2).
 
 ---
 
