@@ -356,6 +356,9 @@ same scale and the ink beneath them summed.
 * AC-10.7 Measuring yields between pages so a long document cannot lock the UI, and is
   abandoned if the document changes underneath it. The toolbar shows progress until
   every page is measured.
+* AC-10.9 The toolbar figure is **absent** until a document is open, not shown as
+  0 %. With nothing loaded there is no ink to save, and a zero reads as a measurement
+  rather than as the absence of one.
 * AC-10.8 It is an **estimate** and the UI says so. Real consumption depends on the
   printer's colour model, driver, dithering and paper. It must never be presented as a
   guarantee.

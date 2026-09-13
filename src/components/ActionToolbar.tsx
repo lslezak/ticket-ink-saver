@@ -305,25 +305,32 @@ export function ActionToolbar(props: ActionToolbarProps): JSX.Element {
         </ToolbarGroup>
 
         <ToolbarGroup align={{ default: 'alignEnd' }}>
-          <ToolbarItem>
-            {/* FR-10: an estimate, and the tooltip says so rather than implying precision. */}
-            <Tooltip
-              content={
-                props.inkMeasuring
-                  ? 'Estimating how much ink the masks save…'
-                  : 'Rough estimate of the ink saved across the whole document, based on how ' +
-                    'much of the printed area the masks cover.'
-              }
-            >
-              <span className="tis-toolbar__ink" aria-live="polite">
-                <TintIcon />
-                <span className="tis-toolbar__ink-value">
-                  {props.inkMeasuring ? '…' : formatSaving(props.inkSaved)}
+          {/*
+            Omitted entirely until a document is open: with nothing loaded there is no
+            ink to save, and "0 % ink saved" reads as a measurement rather than as the
+            absence of one. The whole ToolbarItem goes, so it leaves no gap behind.
+          */}
+          {hasDocument ? (
+            <ToolbarItem>
+              {/* FR-10: an estimate, and the tooltip says so rather than implying precision. */}
+              <Tooltip
+                content={
+                  props.inkMeasuring
+                    ? 'Estimating how much ink the masks save…'
+                    : 'Rough estimate of the ink saved across the whole document, based on how ' +
+                      'much of the printed area the masks cover.'
+                }
+              >
+                <span className="tis-toolbar__ink" aria-live="polite">
+                  <TintIcon />
+                  <span className="tis-toolbar__ink-value">
+                    {props.inkMeasuring ? '…' : formatSaving(props.inkSaved)}
+                  </span>
+                  <span className="tis-toolbar__ink-label">ink saved</span>
                 </span>
-                <span className="tis-toolbar__ink-label">ink saved</span>
-              </span>
-            </Tooltip>
-          </ToolbarItem>
+              </Tooltip>
+            </ToolbarItem>
+          ) : null}
           <ToolbarItem>
             <Tooltip content={props.isPanelOpen ? 'Hide the mask list' : 'Show the mask list'}>
               <Button
