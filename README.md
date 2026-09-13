@@ -25,6 +25,35 @@ npm run typecheck  # types only
 
 `dist/` is a static bundle — host it anywhere, no backend required.
 
+## Deployment
+
+`.github/workflows/deploy-pages.yml` builds the app and publishes it to GitHub Pages on
+every push to `main`, and can be re-run by hand from the Actions tab.
+
+**One-off setup:** in the repository, *Settings → Pages → Build and deployment →
+Source* must be set to **GitHub Actions**. Without it the workflow builds successfully
+and the deploy step fails.
+
+### The base path
+
+A GitHub Pages project site is served from `https://<user>.github.io/<repo>/`, so every
+asset URL needs that prefix. The workflow sets `BASE_PATH` from the repository name and
+`vite.config.ts` reads it; with the variable unset the build stays at the root, which is
+what `npm run dev` and `npm run preview` want.
+
+This is the classic way a Vite app breaks on Pages: the page loads, then the scripts,
+styles and the pdf.js worker all 404. To reproduce the deployed layout locally:
+
+```bash
+BASE_PATH=/ticket-ink-saver/ npm run build
+mkdir -p /tmp/site/ticket-ink-saver && cp -r dist/* /tmp/site/ticket-ink-saver/
+npx serve -l 4600 /tmp/site     # then open http://localhost:4600/ticket-ink-saver/
+```
+
+The workflow also asserts that `dist/` contains both licence files, since they are
+generated at build time rather than committed and their absence would otherwise
+publish a licence-incomplete site silently.
+
 ## Using it
 
 1. Drag a PDF onto the window, or click **Open PDF**.

@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Ladislav Slezák
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # So a deploy can be re-run without an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it half-published, but queue at
+# most one more: only the newest commit is worth deploying.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches the version the project is developed against.
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          # A project site lives under /<repo>/. Derived rather than hard-coded so a
+          # fork or a rename does not silently publish a site with broken asset URLs.
+          BASE_PATH: /${{ github.event.repository.name }}/
+        # Also runs `tsc -b` and regenerates the licence notices, which are build
+        # artifacts and deliberately not committed.
+        run: npm run build
+
+      - name: Check the build carries its licence notices
+        # Apache-2.0 section 4 and GPLv3 section 4 both require these to travel with
+        # the code. They are generated at build time, so a broken generator would
+        # otherwise publish a licence-incomplete site without anyone noticing.
+        run: |
+          test -s dist/LICENSE.txt
+          test -s dist/THIRD-PARTY-LICENSES.txt
+          grep -q "Apache License" dist/THIRD-PARTY-LICENSES.txt
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
